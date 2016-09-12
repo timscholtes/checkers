@@ -1,2 +1,2 @@
-A = [4,2,3]
-print(A[1])
+A = None
+print(A is None)
