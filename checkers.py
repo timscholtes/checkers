@@ -26,7 +26,8 @@ board = new_board_viz()
 
 
 ### utilities
-def forward_move_function(pos):
+def forward_move_function(pos,turn):
+	if turn == 1:
 		if ((pos-1) // 4) % 2 == 0:
 			if pos % 4 == 0:
 				pos_dict = {'simp': [pos+4],
@@ -53,7 +54,68 @@ def forward_move_function(pos):
 				pos_dict = {'simp': [pos+3,pos+4],
 				'jump': [pos+7,pos+9],
 				'mid': [pos+3,pos+4]}
-		return pos_dict
+		## near end of board, no jumps or mids!
+		if ((pos-1) // 4) == 6:
+			if pos % 4 == 0:
+				pos_dict = {'simp': [pos+4],
+				'jump': [],
+				'mid': []}
+			elif pos % 4 == 1:
+				pos_dict = {'simp': [pos+4,pos+5],
+				'jump': [],
+				'mid': []}
+			else:
+				pos_dict = {'simp': [pos+4,pos+5],
+				'jump': [],
+				'mid': []}
+
+	if turn == -1:
+		if ((pos-1) // 4) % 2 == 0:
+			if pos % 4 == 0:
+				pos_dict = {'simp': [pos-4],
+				'jump': [pos-9],
+				'mid': [pos-4]}
+			elif pos % 4 == 1:
+				pos_dict = {'simp': [pos-4,pos-3],
+				'jump': [pos-7],
+				'mid': [pos-3]}
+			else:
+				pos_dict = {'simp': [pos-4,pos-3],
+				'jump': [pos-7,pos-9],
+				'mid': [pos-4,pos-3]}
+		else:
+			if pos % 4 == 0:
+				pos_dict = {'simp': [pos-5,pos-4],
+				'jump': [pos-9],
+				'mid': [pos-5]}
+			elif pos % 4 == 1:
+				pos_dict = {'simp': [pos-4],
+				'jump': [pos-7],
+				'mid': [pos-4]}
+			else:
+				pos_dict = {'simp': [pos-5,pos-4],
+				'jump': [pos-9,pos-7],
+				'mid': [pos-5,pos-4]}
+		## near end of board, no jumps or mids!
+		if ((pos-1) // 4) == 1:
+			if pos % 4 == 0:
+				pos_dict = {'simp': [pos-5,pos-4],
+				'jump': [],
+				'mid': []}
+			elif pos % 4 == 1:
+				pos_dict = {'simp': [pos-4],
+				'jump': [],
+				'mid': []}
+			else:
+				pos_dict = {'simp': [pos-5,pos-4],
+				'jump': [],
+				'mid': []}
+	
+	return pos_dict
+
+
+
+
 
 print(board)
 
@@ -69,7 +131,7 @@ class State(namedtuple('State', 'turn board')):
 		self.opponent = cls.WHITE if turn == cls.RED else cls.RED
 		
 		# build a dict of legal forward steps for each position.
-		self.forward_move_dict = {value: forward_move_function(value) for value in list(range(1,33))}
+		self.forward_move_dict = {value: forward_move_function(value,turn) for value in list(range(1,33))}
 
 		# where are the blank, primary and opponent pieces?
 		self.empties = [i for i in list(range(1,33)) if board[i-1] == 0]
@@ -125,7 +187,7 @@ class State(namedtuple('State', 'turn board')):
 			#jumped = (self.forward_move_dict[move[0]]['simp'])[self.forward_move_dict[move[0]]['jump'].index(move[1])]
 			jumped = (self.forward_move_dict[move[0]]['mid'])[self.forward_move_dict[move[0]]['jump'].index(move[1])]
 			self.board[jumped-1] = 0
-		print(jumped, 'has been captured')
+			print(jumped, 'has been captured')
 
 		return State(self.opponent, self.board)
 
@@ -134,9 +196,9 @@ class State(namedtuple('State', 'turn board')):
 # start the board with +1's for the first player, -1's for second player, 0 for empty spots 
 # (+K for first player Kings, -K for second player Kings)
 start_board = [val for sublist in [[1]*12,[0]*8,[-1]*12] for val in sublist]
-start_board = [val for sublist in [[1]*12,[-1]*4,[0]*8,[-1]*8] for val in sublist]
+#start_board = [val for sublist in [[1]*12,[-1]*4,[0]*8,[-1]*8] for val in sublist]
 
 
-START = State(State.RED, start_board)
+START = State(State.WHITE, start_board)
 print(START.available_moves())
-print(START.move([9,18]))
+print(START.move([21,17]))
