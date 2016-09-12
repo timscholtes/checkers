@@ -119,16 +119,19 @@ def forward_move_function(pos,turn):
 
 print(board)
 
-class State(namedtuple('State', 'turn board jump_location')):
+class State(object):
  	
 	RED   = 1
 	WHITE = -1
 	KINGS_ROW  = {RED: list(range(21, 33)),WHITE: list(range(1, 13))}
 	
-	def __new__(cls,turn,board,jump_location):
+	def __init__(self,turn,board,jump_location):
 		
-		self = super(State, cls).__new__(cls, turn, board,jump_location)
-		self.opponent = cls.WHITE if turn == cls.RED else cls.RED
+		self.turn=turn
+		self.board=board
+		self.jump_location=jump_location
+		
+		self.opponent = self.WHITE if turn == self.RED else self.RED
 		
 		# build a dict of legal forward steps for each position.
 		self.forward_move_dict = {value: forward_move_function(value,turn) for value in list(range(1,33))}
@@ -139,7 +142,7 @@ class State(namedtuple('State', 'turn board jump_location')):
 		self.empties = [i for i in list(range(1,33)) if board[i-1] == 0]
 		self.opponent_pos = [i for i in list(range(1,33)) if board[i-1] == self.opponent]
 		self.primary_pos = [i for i in list(range(1,33)) if board[i-1] == self.turn]
-		return self
+		
 
 	def available_moves(self):
 		"""Here  we evaluate all of the available moves to the player, simple moves and jumps separately.
@@ -165,7 +168,7 @@ class State(namedtuple('State', 'turn board jump_location')):
 			# for jump, there needs to be empty space to jump into AND an opposition piece in the same simp. space
 			pos_jumps = [X['jump'][i] for i in range(len(X['jump'])) if self.board[X['jump'][i]-1] ==0 and self.board[X['simp'][i]-1] == self.opponent]
 			if len(pos_jumps)>0:
-				available_jump[pos] = pos_jumps
+				available_jump[self.jump_location] = pos_jumps
 		return {'jumps': available_jump}
 	
 	def move(self,move):
@@ -223,5 +226,4 @@ print(START.available_moves())
 print(START.opponent)
 moved = START.move([11,18])
 print(moved.opponent)
-print(moved)
 print(moved.available_moves())
