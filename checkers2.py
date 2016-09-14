@@ -223,7 +223,7 @@ class checkers_class(Game):
             board[move[1]-1] = board[move[0]-1]
             board[move[0]-1] = 0
             if move[1] in self.KINGS_ROW[state.turn]:
-                print('promoting ', move[1], 'to King')
+               # print('promoting ', move[1], 'to King')
                 board[move[1]-1] = state.turn*self.K
             return state_class(board=board,turn=state.turn*-1,jump_loc=None)
 
@@ -232,7 +232,7 @@ class checkers_class(Game):
 
                     # if it's made to the kings row, turn into a king, hand over control
             if move[1] in self.KINGS_ROW[state.turn]:
-                print('promoting ', move[1], 'to King')
+                #print('promoting ', move[1], 'to King')
                 board[move[1]-1] = state.turn*self.K
                 return state_class(board=board,turn=state.turn*-1,jump_loc=None)
             available = self.legal_moves(new_state)
@@ -242,11 +242,11 @@ class checkers_class(Game):
                 in_jump=True
                 while not len(available)==0:
                     new_move = available[0]
-                    print("Chaining move: ",new_move)
+                    #print("Chaining move: ",new_move)
                     new_state = self.make_jump(new_state.board,new_state.turn,new_move)
                     available = self.legal_moves(new_state)
                     in_jump = not len(available)==0
-                    print(in_jump)
+                    #print(in_jump)
                 else:
                     if len(available)==0:
                         return state_class(board= new_state.board,turn=state.turn*-1,jump_loc=None)
@@ -435,20 +435,20 @@ mod2 = {'W1': W1,'W2': W2,'W3': W3}
 
 def eval_fn1(x,game):
     if game.terminal_test(x):
-        return game.utility(x,player=state.turn)
+        return game.utility(x,player=x.turn)
     else:
         return predict(mod1,x.board)
 def eval_fn2(x,game):
     if game.terminal_test(x):
-        return game.utility(x,player=state.turn)
+        return game.utility(x,player=x.turn)
     else:
-        return predict(mod1,x.board)
+        return predict(mod2,x.board)
 
 eval_fun_dict = {1: eval_fn1, -1: eval_fn2}
 
 
 def alphabeta_player(game, state,eval_fun_dict):
-    return alphabeta_search(state, game,eval_fun_dict,d=3)
+    return alphabeta_search(state, game,eval_fun_dict,d=2)
 
 player1=alphabeta_player
 player2=alphabeta_player
