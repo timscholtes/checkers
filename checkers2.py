@@ -205,7 +205,6 @@ class checkers_class(Game):
         # identify the captured piece, remove from play
         jumped = (move_dict['mid'])[move_dict['jump'].index(move[1])]
         board[jumped-1] = 0
-        print(jumped, 'has been captured')
         
         new_state=state_class(
             board= board,turn=turn,
@@ -216,7 +215,6 @@ class checkers_class(Game):
     def make_move(self,move,state):
         # the move must be a list of length two - starting position and ending position.
         #classify move type
-        print('Making move: ',move)
         move_type = 'jump' if abs(move[0]-move[1])>5 else 'simp'
 
         board = state.board.copy()
@@ -261,7 +259,7 @@ class checkers_class(Game):
 
 
     def successors(self,state):
-        return [(move, self.make_move(move, state)) for pos,move in self.legal_moves(state).items()]
+        return [(move, self.make_move(move, state)) for move in self.legal_moves(state)]
     
     def terminal_test(self, state):
         "Return True if this is a final state for the game."
@@ -308,7 +306,6 @@ class checkers_class(Game):
 
 
 checkers=checkers_class()
-state=checkers.initial
 
 ####
 
@@ -319,9 +316,10 @@ def play_game(game, *players):
     while counter<100:
         print(counter)
         for player in players:
-            move = player(game, state)
+            move = player(game=game, state=state,eval_fun_dict=eval_fun_dict)
             state = game.make_move(move, state)
-            #game.print_board(state)
+            print('making move: ', move)
+            game.print_board(state)
             if game.terminal_test(state):
                 game.print_board(state)
                 return game.utility(state_class(state.board,turn=1,jump_loc=None), 1)
@@ -334,9 +332,130 @@ def random_player(game, state):
     print('legal moves: ',game.legal_moves(state))
     return random.choice(game.legal_moves(state))
 
-
+"""
 player1 = random_player
 player2 = random_player
 
 result = play_game(checkers,player1,player2)
 print(result)
+
+"""#################
+
+def alphabeta_search(state, game, eval_fun_dict, d=4, cutoff_test=None):
+    """Search game to determine best action; use alpha-beta pruning.
+    This version cuts off search and uses an evaluation function."""
+
+    player = state.turn  #game.to_move(state)
+    eval_fn = eval_fun_dict[player]
+
+    def max_value(state, alpha, beta, depth):
+        if cutoff_test(state, depth):
+            return eval_fn(state,game)
+        v = -infinity
+        for (a, s) in game.successors(state):
+            v = max(v, min_value(s, alpha, beta, depth+1))
+            if v >= beta:
+                return v
+            alpha = max(alpha, v)
+        return v
+
+    def min_value(state, alpha, beta, depth):
+        if cutoff_test(state, depth):
+            return eval_fn(state,game)
+        v = infinity
+        for (a, s) in game.successors(state):
+            v = min(v, max_value(s, alpha, beta, depth+1))
+            if v <= alpha:
+                return v
+            beta = min(beta, v)
+        return v
+
+    # Body of alphabeta_search starts here:
+    # The default test cuts off at depth d or at a terminal state
+    cutoff_test = (cutoff_test or
+                   (lambda state,depth: depth>d or game.terminal_test(state)))
+    #eval_fn = eval_fn #or (lambda state: game.utility(state, player))
+    #action, state = argmax(game.successors(state),
+    #                       lambda a, s: min_value(s, -infinity, infinity, 0))
+    states  = [i[1] for i in game.successors(state)]
+    actions = [i[0] for i in game.successors(state)]
+    Z = argmax(states,lambda s: min_value(s, -infinity, infinity, 0))
+
+    action=actions[Z]
+
+    return action
+
+############
+import numpy as np
+import time
+######
+def predict(model, x):
+    x = np.append(x,1)
+    W1, W2, W3 = model['W1'], model['W2'], model['W3']
+    # Forward propagation
+    z1 = np.dot(W1,x)
+    a1 = np.tanh(z1)
+    z2 = np.dot(W2,np.append(a1,1))
+    a2 = np.tanh(z2)
+    z3 = np.dot(W3,np.append(a2,1))
+    a3 = np.tanh(z3)
+    return a3
+######
+N_hl_1 = 40
+N_hl_2 = 10
+k = 32
+
+
+W1 = np.empty((0, k+1)) # 33 because we want the bias term too!
+
+for line in range(1,N_hl_1+1):
+    W1 = np.append(W1, [2*np.random.random(k+1)-1], axis=0)
+
+W2 = np.empty((0, N_hl_1+1)) # 41 because we want the bias term too!
+for line in range(1,N_hl_2+1):
+    W2 = np.append(W2, [2*np.random.random(N_hl_1+1)-1], axis=0)
+
+W3 = np.array([2*np.random.random(N_hl_2+1)-1])
+
+mod1 = {'W1': W1,'W2': W2,'W3': W3}
+
+
+W1 = np.empty((0, k+1)) # 33 because we want the bias term too!
+
+for line in range(1,N_hl_1+1):
+    W1 = np.append(W1, [2*np.random.random(k+1)-1], axis=0)
+
+W2 = np.empty((0, N_hl_1+1)) # 41 because we want the bias term too!
+for line in range(1,N_hl_2+1):
+    W2 = np.append(W2, [2*np.random.random(N_hl_1+1)-1], axis=0)
+
+W3 = np.array([2*np.random.random(N_hl_2+1)-1])
+
+mod2 = {'W1': W1,'W2': W2,'W3': W3}
+
+def eval_fn1(x,game):
+    if game.terminal_test(x):
+        return game.utility(x,player=state.turn)
+    else:
+        return predict(mod1,x.board)
+def eval_fn2(x,game):
+    if game.terminal_test(x):
+        return game.utility(x,player=state.turn)
+    else:
+        return predict(mod1,x.board)
+
+eval_fun_dict = {1: eval_fn1, -1: eval_fn2}
+
+
+def alphabeta_player(game, state,eval_fun_dict):
+    return alphabeta_search(state, game,eval_fun_dict,d=3)
+
+player1=alphabeta_player
+player2=alphabeta_player
+
+#X = checkers.successors(checkers.initial)
+#Y = [i[1] for i in X]
+#print(Y)
+
+result = play_game(checkers,player1,player2)
+
