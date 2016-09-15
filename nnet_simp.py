@@ -47,3 +47,7 @@ for line in range(1,N_hl_2+1):
 W3 = np.array([2*np.random.random(N_hl_2+1)-1])
 
 mod2 = {'W1': W1,'W2': W2,'W3': W3}
+
+print('W1',mod1['W1'].shape)
+print('W2',mod1['W2'].shape)
+print('W3',mod1['W3'].shape)

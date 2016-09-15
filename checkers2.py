@@ -3,7 +3,10 @@ This will allow for computerised players to play, and for minimax algo's to func
 
 from games import *
 import numpy as np
+import time
+from nn_methods import *
 
+######
 def rank(s):
     """Return the rank of the given squares. Counting starts from zero."""
     return ((s-1)//4)
@@ -301,59 +304,34 @@ class checkers_class(Game):
 
         available = self.legal_moves(state)
         no_moves = len(available)==0
-        return (no_moves or no_pieces)
-
-
-
-checkers=checkers_class()
+        output_utility = -1 if (no_moves or no_pieces) else 1
+        return output_utility
 
 ####
 
-def play_game(game, *players):
-    "Play an n-person, move-alternating game."
-    state = game.initial
-    counter = 0
-    while counter<100:
-        print(counter)
-        for player in players:
-            move = player(game=game, state=state,eval_fun_dict=eval_fun_dict)
-            state = game.make_move(move, state)
-            print('making move: ', move)
-            game.print_board(state)
-            if game.terminal_test(state):
-                game.print_board(state)
-                return game.utility(state_class(state.board,turn=1,jump_loc=None), 1)
-        counter += 1
+def eval_fn(x,game,nn):
+    if game.terminal_test(x):
+        return game.utility(x,player=x.turn)
     else:
-        return 0
+        return predict_nn2(nn,x.board,x.turn)
 
-def random_player(game, state):
-    "A player that chooses a legal move at random."
-    print('legal moves: ',game.legal_moves(state))
-    return random.choice(game.legal_moves(state))
-
-"""
-player1 = random_player
-player2 = random_player
-
-result = play_game(checkers,player1,player2)
-print(result)
-
-"""#################
-
-def alphabeta_search(state, game, eval_fun_dict, d=4, cutoff_test=None):
+def alphabeta_search(state, game, eval_fn,nnets, d=3, cutoff_test=None):
     """Search game to determine best action; use alpha-beta pruning.
     This version cuts off search and uses an evaluation function."""
 
     player = state.turn  #game.to_move(state)
-    eval_fn = eval_fun_dict[player]
+    nn = nnets[player]
 
     def max_value(state, alpha, beta, depth):
         if cutoff_test(state, depth):
-            return eval_fn(state,game)
+            return eval_fn(state,game,nn)
         v = -infinity
-        for (a, s) in game.successors(state):
-            v = max(v, min_value(s, alpha, beta, depth+1))
+        GS = game.successors(state)
+        for (a, s) in GS:
+            if len(GS[0]) == 0:
+                v = max(v, min_value(s, alpha, beta, depth))
+            else:
+                v = max(v, min_value(s, alpha, beta, depth+1))
             if v >= beta:
                 return v
             alpha = max(alpha, v)
@@ -361,10 +339,14 @@ def alphabeta_search(state, game, eval_fun_dict, d=4, cutoff_test=None):
 
     def min_value(state, alpha, beta, depth):
         if cutoff_test(state, depth):
-            return eval_fn(state,game)
+            return eval_fn(state,game,nn)
         v = infinity
-        for (a, s) in game.successors(state):
-            v = min(v, max_value(s, alpha, beta, depth+1))
+        GS = game.successors(state)
+        for (a, s) in GS:
+            if len(GS[0]) == 0:
+                v = min(v, max_value(s, alpha, beta, depth))
+            else:
+                v = min(v, max_value(s, alpha, beta, depth+1))
             if v <= alpha:
                 return v
             beta = min(beta, v)
@@ -374,88 +356,59 @@ def alphabeta_search(state, game, eval_fun_dict, d=4, cutoff_test=None):
     # The default test cuts off at depth d or at a terminal state
     cutoff_test = (cutoff_test or
                    (lambda state,depth: depth>d or game.terminal_test(state)))
-    #eval_fn = eval_fn #or (lambda state: game.utility(state, player))
-    #action, state = argmax(game.successors(state),
-    #                       lambda a, s: min_value(s, -infinity, infinity, 0))
     states  = [i[1] for i in game.successors(state)]
     actions = [i[0] for i in game.successors(state)]
-    Z = argmax(states,lambda s: min_value(s, -infinity, infinity, 0))
-
-    action=actions[Z]
-
+    # if there's only 1 available action, just take it
+    if len(actions) == 0:
+        action=actions[0]
+    else:
+        Z = argmax(states,lambda s: min_value(s, -infinity, infinity, 0))
+        action=actions[Z]
     return action
 
-############
-import numpy as np
-import time
-######
-def predict(model, x):
-    x = np.append(x,1)
-    W1, W2, W3 = model['W1'], model['W2'], model['W3']
-    # Forward propagation
-    z1 = np.dot(W1,x)
-    a1 = np.tanh(z1)
-    z2 = np.dot(W2,np.append(a1,1))
-    a2 = np.tanh(z2)
-    z3 = np.dot(W3,np.append(a2,1))
-    a3 = np.tanh(z3)
-    return a3
-######
-N_hl_1 = 40
-N_hl_2 = 10
-k = 32
+def alphabeta_player(game, state,eval_fn,nnets,d=3):
+    return alphabeta_search(state, game,eval_fn,nnets,d=d)
 
+def random_player(game, state,*extra):
+    "A player that chooses a legal move at random."
+    return random.choice(game.legal_moves(state))
 
-W1 = np.empty((0, k+1)) # 33 because we want the bias term too!
-
-for line in range(1,N_hl_1+1):
-    W1 = np.append(W1, [2*np.random.random(k+1)-1], axis=0)
-
-W2 = np.empty((0, N_hl_1+1)) # 41 because we want the bias term too!
-for line in range(1,N_hl_2+1):
-    W2 = np.append(W2, [2*np.random.random(N_hl_1+1)-1], axis=0)
-
-W3 = np.array([2*np.random.random(N_hl_2+1)-1])
-
-mod1 = {'W1': W1,'W2': W2,'W3': W3}
-
-
-W1 = np.empty((0, k+1)) # 33 because we want the bias term too!
-
-for line in range(1,N_hl_1+1):
-    W1 = np.append(W1, [2*np.random.random(k+1)-1], axis=0)
-
-W2 = np.empty((0, N_hl_1+1)) # 41 because we want the bias term too!
-for line in range(1,N_hl_2+1):
-    W2 = np.append(W2, [2*np.random.random(N_hl_1+1)-1], axis=0)
-
-W3 = np.array([2*np.random.random(N_hl_2+1)-1])
-
-mod2 = {'W1': W1,'W2': W2,'W3': W3}
-
-def eval_fn1(x,game):
-    if game.terminal_test(x):
-        return game.utility(x,player=x.turn)
+def play_game(game,nnets, *players,verbose=False,d=3):
+    "Play an n-person, move-alternating game."
+    state = game.initial
+    counter = 0
+    while counter<200:
+        for player in players:
+            move = player(game, state,eval_fn,nnets,d)
+            state = game.make_move(move, state)
+            #print('making move: ', move)
+            if verbose:
+                print(counter)
+                game.print_board(state)
+                print('p1 thinks: ',eval_fn(state,game,nnets[1]))
+                print('p2 thinks: ',eval_fn(state,game,nnets[-1]))
+            if game.terminal_test(state):
+                print(counter)
+                game.print_board(state)
+                return [game.utility(state_class(state.board,turn=1,jump_loc=None), 1),
+                game.utility(state_class(state.board,turn=-1,jump_loc=None), -1)]
+            counter += 1
     else:
-        return predict(mod1,x.board)
-def eval_fn2(x,game):
-    if game.terminal_test(x):
-        return game.utility(x,player=x.turn)
-    else:
-        return predict(mod2,x.board)
+        game.print_board(state)
+        return [0,0]
 
-eval_fun_dict = {1: eval_fn1, -1: eval_fn2}
+#################
 
-
-def alphabeta_player(game, state,eval_fun_dict):
-    return alphabeta_search(state, game,eval_fun_dict,d=2)
-
+"""
 player1=alphabeta_player
 player2=alphabeta_player
+#player1=random_player
+#player2=random_player
 
-#X = checkers.successors(checkers.initial)
-#Y = [i[1] for i in X]
-#print(Y)
 
-result = play_game(checkers,player1,player2)
+nnets = {1: generate_player_nn(),-1: generate_player_nn()}
 
+checkers=checkers_class()
+result1 = play_game(checkers,nnets,player1,player2)
+#result2 = play_game2(checkers,nnets,player1,player2)
+"""
