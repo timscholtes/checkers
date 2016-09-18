@@ -146,15 +146,15 @@ class checkers_class(Game):
         return X
 
     def legal_moves(self,state):
-        opponent_temp = -state.turn
+        opponent_temp = state.turn * -1
         primary_pos = [i for i in list(range(1,33)) if np.sign(state.board[i-1]) == np.sign(state.turn)]
         
         available = []
         if state.jump_loc is None:
+            avail_jumps = []
+            avail_simps = []
             # if any jumps are found for any positions, then it will not evaluate any possible simple moves.
-            # Declared as False, outside the loop. The first time a jump is found, it will revert to True
-            # meaning simps will not be evaluated.
-            jumpables=False
+            jumpables = False
             for pos in primary_pos:
                 if state.board[pos-1] == self.K*state.turn:
                     X = self.both_move_dict[pos]
@@ -167,16 +167,17 @@ class checkers_class(Game):
                 
                 if len(pos_jumps)>0:
                     for i in pos_jumps:
-                        available.append([pos,i])
-                    jumpables = True
-                elif not jumpables:
+                        avail_jumps.append([pos,i])
+                else:
                     # evaluate the simple moves (requiring forward empty space)
                     pos_simps = [i for i in X['simp'] if state.board[i-1] ==0]
                     if len(pos_simps)>0:
                         for i in pos_simps:
-                            available.append([pos,i])
-            return available
-
+                            avail_simps.append([pos,i])
+            if len(avail_jumps)==0:
+                available = avail_simps
+            else:
+                available = avail_jumps
         else:
             if state.board[state.jump_loc-1] == self.K*state.turn:
                 X = self.both_move_dict[state.jump_loc]
@@ -188,8 +189,8 @@ class checkers_class(Game):
             pos_jumps = self.available_jumps(move_dict=X,state=state)
             if len(pos_jumps)>0:
                 for i in pos_jumps:
-                            available.append([state.jump_loc,i])
-            return available
+                    available.append([state.jump_loc,i])
+        return available
 
     def movables(self,moves):
         [i[0] for i in moves]
@@ -268,7 +269,10 @@ class checkers_class(Game):
         "Return True if this is a final state for the game."
         pieces_left = all(np.sign(i) == 1 for i in state.board) or all(np.sign(i) == -1 for i in state.board)
         no_moves = len(self.legal_moves(state))==0
-        return no_moves or pieces_left
+        state2 = state_class(state.board,jump_loc=None,turn=state.turn*-1)
+        no_moves2 = len(self.legal_moves(state2)) == 0
+    
+        return no_moves or pieces_left or no_moves2
 
 
 
@@ -377,16 +381,70 @@ def play_game(game,nnets, *players,verbose=False,d=3):
     "Play an n-person, move-alternating game."
     state = game.initial
     counter = 0
+    move_store = []
+    while counter<200:
+        for player in players:
+            if verbose:
+                print('legal moves: ', game.legal_moves(state))
+            move = player(game, state,eval_fn,nnets,d)
+            if verbose:
+                print('turn: ',state.turn)
+                print('making move: ',move)
+            state = game.make_move(move, state)
+            np.append(move_store,move)
+            move_store[len(move_store):] = [move]
+            #print('making move: ', move)
+            if verbose:
+                print(counter)
+                game.print_board(state)
+            #check if the same series of moves has been played over:
+            if counter>20:
+                repeat_check = [move_store[counter-i][1] == move_store[counter-i-4][1] and
+                 move_store[counter-i][0] == move_store[counter-i-4][0] for i in range(4)]
+                if all(repeat_check):
+                    if verbose:
+                        print('stuck in a loop')
+                        game.print_board(state)
+                    return [0,0]
+            if game.terminal_test(state):
+                if verbose:
+                    print(counter)
+                    game.print_board(state)
+                return [game.utility(state_class(state.board,turn=1,jump_loc=None), 1),
+                game.utility(state_class(state.board,turn=-1,jump_loc=None), -1)]
+            counter += 1
+    else:
+        if verbose:
+            game.print_board(state)
+        return [0,0]
+
+
+def play_game_from_state(game,state,nnets, *players,verbose=False,d=3):
+    "Play an n-person, move-alternating game."
+    counter = 0
+    move_store = []
+    if state.turn==-1:
+        players = players[::-1]
     while counter<200:
         for player in players:
             move = player(game, state,eval_fn,nnets,d)
             state = game.make_move(move, state)
+            np.append(move_store,move)
+            move_store[len(move_store):] = [move]
             #print('making move: ', move)
             if verbose:
                 print(counter)
                 game.print_board(state)
                 print('p1 thinks: ',eval_fn(state,game,nnets[1]))
                 print('p2 thinks: ',eval_fn(state,game,nnets[-1]))
+            #check if the same series of moves has been played over:
+            if counter>20:
+                repeat_check = [move_store[counter-i][1] == move_store[counter-i-4][1] and
+                 move_store[counter-i][0] == move_store[counter-i-4][0] for i in range(4)]
+                if all(repeat_check):
+                    print('stuck in a loop')
+                    game.print_board(state)
+                    return [0,0]
             if game.terminal_test(state):
                 print(counter)
                 game.print_board(state)

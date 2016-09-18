@@ -2,7 +2,7 @@ import numpy as np
 import copy 
 def generate_player_nn(to_mutate=None,k=32,N1=40,N2=10,start_spread=0.2,sigma=0.05):
 	if to_mutate is None:
-		print('generating new player with random weights and biases')
+		#print('generating new player with random weights and biases')
 		W1 = np.empty((0, k+1)) # 33 because we want the bias term too!
 
 		for line in range(1,N1+1):
@@ -18,9 +18,9 @@ def generate_player_nn(to_mutate=None,k=32,N1=40,N2=10,start_spread=0.2,sigma=0.
 
 		mod = {'W1': W1,'W2': W2,'W3': W3, 'W4': W4}
 	else:
-		print('Mutating existing player, with sigma ',sigma)
+		#print('Mutating existing player, with sigma ',sigma)
 		mod = copy.deepcopy(to_mutate)
-		k = mod['W1'].shape[1]-1
+		k =  mod['W1'].shape[1]-1
 		N1 = mod['W1'].shape[0]
 		N2 = mod['W2'].shape[0]
 
@@ -37,14 +37,14 @@ def generate_player_nn(to_mutate=None,k=32,N1=40,N2=10,start_spread=0.2,sigma=0.
 		mod['W4'] = mod['W4']+noise
 	return mod
 
-def regeneration(prev_gen=None,spawn_ratio=3,N_players=15):
+def regeneration(prev_gen=None,spawn_ratio=3,N_players=15,sigma=0.05):
 	if prev_gen is None:
 		new_gen = {i: generate_player_nn() for i in range(N_players)}
 	else:
 		new_gen = {}
-		for i in range(len(prev_gen)):
+		for i in prev_gen:
 			for j in range(spawn_ratio):
-				new_gen[len(new_gen)] = generate_player_nn(to_mutate=prev_gen[i])
+				new_gen[len(new_gen)] = generate_player_nn(to_mutate=prev_gen[i],sigma=sigma)
 	return new_gen
 
 def predict_nn(model, x,turn):

@@ -117,6 +117,17 @@ def every(predicate, seq):
         if not predicate(x): return False
     return True
 
+def all(seq):
+    """True if every element of seq satisfies predicate.
+    >>> every(callable, [min, max])
+    1
+    >>> every(callable, [min, 3])
+    0
+    """
+    for x in seq:
+        if not x: return False
+    return True
+
 def some(predicate, seq):
     """If some element x of seq satisfies predicate(x), return predicate(x).
     >>> some(callable, [min, 3])
