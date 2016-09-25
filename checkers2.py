@@ -377,6 +377,11 @@ def random_player(game, state,*extra):
     "A player that chooses a legal move at random."
     return random.choice(game.legal_moves(state))
 
+def query_player(game, state,*extra):
+    "Make a move by querying standard input."
+    a = [int(x) for x in input('Your move? ').split()]
+    return(a)
+
 def play_game(game,nnets, *players,verbose=False,d=3):
     "Play an n-person, move-alternating game."
     state = game.initial
@@ -384,6 +389,9 @@ def play_game(game,nnets, *players,verbose=False,d=3):
     move_store = []
     while counter<200:
         for player in players:
+            if verbose:
+                print(counter)
+                game.print_board(state)
             if verbose:
                 print('legal moves: ', game.legal_moves(state))
             move = player(game, state,eval_fn,nnets,d)
@@ -394,9 +402,7 @@ def play_game(game,nnets, *players,verbose=False,d=3):
             np.append(move_store,move)
             move_store[len(move_store):] = [move]
             #print('making move: ', move)
-            if verbose:
-                print(counter)
-                game.print_board(state)
+
             #check if the same series of moves has been played over:
             if counter>20:
                 repeat_check = [move_store[counter-i][1] == move_store[counter-i-4][1] and

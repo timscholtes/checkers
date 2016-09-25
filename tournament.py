@@ -3,8 +3,20 @@ from nn_methods import *
 import random
 from checkers2 import *
 import json
+import multiprocessing as mp
 def generate_schedule(N_players,N_opponents):
-	return {i: random.sample([x for x in range(N_players) if x!=i],N_opponents) for i in range(N_players)}
+	X = {i: random.sample([x for x in range(N_players) if x!=i],N_opponents) for i in range(N_players)}
+	games_list = []
+	for p1,opp_list in X.items():
+		for p2 in opp_list:
+			flip = random.random()
+		# randomise start order
+			if flip<0.5:
+				Y = [p1,p2]
+			else:
+				Y = [p2,p1]
+			games_list.append(Y)
+	return games_list
 
 def generate_scoreboard(N_players):
 	return [0 for i in range(N_players)]
@@ -17,28 +29,48 @@ def play_tournament(schedule,players,d,verbose):
 	player1=alphabeta_player
 	player2=alphabeta_player
 	game_counter=0
-	total_games = len(schedule)*len(schedule[0])
-	for p1,opp_list in schedule.items():
-		for p2 in opp_list:
-			game_counter+= 1
-			if verbose:
-				print('Game: ',game_counter,' out of ',total_games,': ',p1,' vs ',p2)
-			nnets = {1: players[p1],-1: players[p2]}
-			start_time = time.clock()
-			flip = random.random()
-			# randomise start order
-			if flip<0.5:
-				outcome = play_game(checkers,nnets,player1,player2,d=d,verbose=verbose)
-			else:
-				outcome = play_game(checkers,nnets,player2,player1,d=d,verbose=verbose)
-			end_time = time.clock()
-			score[p1] += outcome[0]
-			score[p2] += outcome[1]
-			if verbose:
-				print(outcome)
-				print(end_time-start_time)
+	total_games = len(schedule)
+	scores = []
+	for match in schedule:
+		p1 = match[0]
+		p2 = match[1]
+		game_counter+= 1
+		if verbose:
+			print('Game: ',game_counter,' out of ',total_games,': ',p1,' vs ',p2)
+		nnets = {1: players[p1],-1: players[p2]}
+		scores.append(play_game(checkers,nnets,player1,player2,d=d,verbose=verbose))
+		#score[p1] += outcome[0]
+		#score[p2] += outcome[1]
+		if verbose:
+			print(outcome)
+	return scores
 
-	return score
+def setup_play_game(input_list):
+	game=input_list[0]
+	match=input_list[1]
+	players=input_list[2]
+	d=input_list[3]
+	p1 = match[0]
+	p2 = match[1]
+	player1=alphabeta_player
+	player2=alphabeta_player
+	nnets = {1: players[p1],-1: players[p2]}
+	outcome = play_game(game,nnets,player1,player2,d=d,verbose=False)
+	return outcome
+
+def play_parallel_tourn(schedule,players,num_cores,d):
+	score = generate_scoreboard(len(players))
+	checkers=checkers_class()
+	player1=alphabeta_player
+	player2=alphabeta_player
+	game_counter=0
+	total_games = len(schedule)
+	inputs = [(checkers,m,players,d) for m in schedule]
+	pool = mp.Pool(processes=num_cores)
+	scores = pool.map(setup_play_game,inputs)
+	return(scores)
+
+
 
 def cull(scores,k):
 	return np.argsort(scores)[::-1][range(k)]
@@ -73,19 +105,55 @@ def evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,verbose=Fals
 	return top_player
 
 
-X = evolve(1,9,2,3,0.05,1)
+#X = evolve(1,9,2,3,0.05,1)
 
+
+gen1 = regeneration(N_players=30)
+schedule1 = generate_schedule(30,5)
+"""tourn_start = time.time()
+A = play_tournament(schedule=schedule1,players=gen1,d=1,verbose=False)
+tourn_end = time.time()
+"""
+tourn_start2 = time.time()
+B = play_parallel_tourn(schedule=schedule1,players=gen1,num_cores=4,d=4)
+tourn_end2 = time.time()
+
+print(tourn_end2-tourn_start2)
+print(B)
 
 
 """
-gen1 = regeneration(N_players=15)
-schedule1 = generate_schedule(15,5)
-tourn_start = time.clock()
-X = play_tournament(schedule=schedule1,players=gen1,d=1)
-tourn_end = time.clock()
+result_list = []
+def log_result(result):
+    # This is called whenever foo_pool(i) returns a result.
+    # result_list is modified only by the main process, not the pool workers.
+    result_list.append(result)
+
+def apply_async_with_callback(schedule,players,num_cores,d):
+	score = generate_scoreboard(len(players))
+	checkers=checkers_class()
+	player1=alphabeta_player
+	player2=alphabeta_player
+	game_counter=0
+	total_games = len(schedule)
+	inputs = [(checkers,m,players,d) for m in schedule]
+	pool = mp.Pool(processes=num_cores)
+	#scores = pool.map(setup_play_game,inputs)
+
+	#pool = mp.Pool()
+	for i in inputs:
+		pool.apply_async(setup_play_game, args = (i, ), callback = log_result)
+	pool.close()
+	pool.join()
+	print(result_list)
+
+
+
+tourn_start2 = time.time()
+C = apply_async_with_callback(schedule=schedule1,players=gen1,num_cores=4,d=1)
+tourn_end2 = time.time()
+
+print(tourn_end2-tourn_start2)
+print(C)
+
 """
-
-
-
-
-
