@@ -69,9 +69,9 @@ def forward_move_function(pos,turn):
                 'jump': [pos-7],
                 'mid': [pos-3]}
             else:
-                pos_dict = {'simp': [pos-4,pos-3],
+                pos_dict = {'simp': [pos-3,pos-4],
                 'jump': [pos-7,pos-9],
-                'mid': [pos-4,pos-3]}
+                'mid': [pos-3,pos-4]}
         else:
             if pos % 4 == 0:
                 pos_dict = {'simp': [pos-5,pos-4],
@@ -209,7 +209,7 @@ class checkers_class(Game):
         # identify the captured piece, remove from play
         jumped = (move_dict['mid'])[move_dict['jump'].index(move[1])]
         board[jumped-1] = 0
-        
+
         new_state=state_class(
             board= board,turn=turn,
             jump_loc=move[1])
@@ -233,7 +233,6 @@ class checkers_class(Game):
 
         if move_type == 'jump':
             new_state = self.make_jump(board,state.turn,move)
-
                     # if it's made to the kings row, turn into a king, hand over control
             if move[1] in self.KINGS_ROW[state.turn]:
                 #print('promoting ', move[1], 'to King')
@@ -246,8 +245,9 @@ class checkers_class(Game):
                 in_jump=True
                 while not len(available)==0:
                     new_move = available[0]
-                    #print("Chaining move: ",new_move)
                     new_state = self.make_jump(new_state.board,new_state.turn,new_move)
+                    if new_move[1] in self.KINGS_ROW[state.turn]:
+                        new_state.board[new_move[1]-1] = new_state.turn*self.K
                     available = self.legal_moves(new_state)
                     in_jump = not len(available)==0
                     #print(in_jump)

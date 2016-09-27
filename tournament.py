@@ -58,8 +58,15 @@ def setup_play_game(input_list):
 	outcome = play_game(game,nnets,player1,player2,d=d,verbose=False)
 	return outcome
 
+def reconcile_scores(schedule,scores,N_players):
+	rec_scores = [0 for i in range(N_players)]
+	for i in range(len(scores)):
+		rec_scores[schedule[i][0]] += scores[i][0]
+		rec_scores[schedule[i][1]] += scores[i][1]
+	return rec_scores
+
+
 def play_parallel_tourn(schedule,players,num_cores,d):
-	score = generate_scoreboard(len(players))
 	checkers=checkers_class()
 	player1=alphabeta_player
 	player2=alphabeta_player
@@ -68,7 +75,8 @@ def play_parallel_tourn(schedule,players,num_cores,d):
 	inputs = [(checkers,m,players,d) for m in schedule]
 	pool = mp.Pool(processes=num_cores)
 	scores = pool.map(setup_play_game,inputs)
-	return(scores)
+	rec_scores = reconcile_scores(schedule,scores,len(players))
+	return(rec_scores)
 
 
 
@@ -104,24 +112,52 @@ def evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,verbose=Fals
 
 	return top_player
 
+def parallel_evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,num_cores,verbose=False):
+	gen_counter = 1
+	spawn_ratio = int(N_players / carry_forward)
+	while gen_counter <= N_gen:
+		print("Running generation ",gen_counter)
+		if gen_counter == 1:
+			prev_gen = None
+		else:
+			prev_gen = {i: gen[i] for i in prev_gen} 
+		gen = regeneration(prev_gen=prev_gen,N_players=N_players,sigma=sigma,spawn_ratio = spawn_ratio)
+		schedule = generate_schedule(N_players,matches_per_player)
+		scores = play_parallel_tourn(schedule=schedule,players=gen,num_cores=num_cores,d=d)
+		prev_gen = list(cull(scores,carry_forward))
+		gen_counter += 1
 
-#X = evolve(1,9,2,3,0.05,1)
+	top_player = gen[list(cull(scores,1))[0]]
+
+	#with open('data/top_player.txt', 'w') as f:
+	#	json.dump(top_player,f)
+
+	np.save('data/top_player/W1.npy',top_player['W1'])
+	np.save('data/top_player/W2.npy',top_player['W2'])
+	np.save('data/top_player/W3.npy',top_player['W3'])
+	np.save('data/top_player/W4.npy',top_player['W4'])
+
+	return top_player
 
 
-gen1 = regeneration(N_players=30)
-schedule1 = generate_schedule(30,5)
+
+
+X = parallel_evolve(3,6,2,3,0.05,1,4)
+
+"""
+gen1 = regeneration(N_players=3)
+schedule1 = generate_schedule(3,1)"""
 """tourn_start = time.time()
 A = play_tournament(schedule=schedule1,players=gen1,d=1,verbose=False)
 tourn_end = time.time()
-"""
+""""""
 tourn_start2 = time.time()
-B = play_parallel_tourn(schedule=schedule1,players=gen1,num_cores=4,d=4)
+B = play_parallel_tourn(schedule=schedule1,players=gen1,num_cores=4,d=1)
 tourn_end2 = time.time()
 
 print(tourn_end2-tourn_start2)
 print(B)
-
-
+"""
 """
 result_list = []
 def log_result(result):
