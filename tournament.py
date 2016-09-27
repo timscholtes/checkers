@@ -117,6 +117,7 @@ def parallel_evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,num
 	spawn_ratio = int(N_players / carry_forward)
 	while gen_counter <= N_gen:
 		print("Running generation ",gen_counter)
+		print(time.time())
 		if gen_counter == 1:
 			prev_gen = None
 		else:
@@ -141,9 +142,13 @@ def parallel_evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,num
 
 
 
-
+start_time = time.time()
+print('starting at:',start_time)
 X = parallel_evolve(3,6,2,3,0.05,1,4)
 
+end_time = time.time()
+print('ending at:',end_time)
+print(end_time-start_time)
 """
 gen1 = regeneration(N_players=3)
 schedule1 = generate_schedule(3,1)"""
