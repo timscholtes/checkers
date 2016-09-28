@@ -140,7 +140,7 @@ def parallel_evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,num
 
 	return top_player
 
-
+num_cores = mp.cpu_count()
 
 start_time = time.time()
 print('starting at:',start_time)
@@ -151,7 +151,7 @@ X = parallel_evolve(
 	carry_forward=8,
 	sigma=0.05,
 	d=5,
-	num_cores=32,
+	num_cores=num_cores,
 	verbose=False)
 
 end_time = time.time()
