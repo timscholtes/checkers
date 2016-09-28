@@ -150,7 +150,7 @@ X = parallel_evolve(
 	matches_per_player=5,
 	carry_forward=8,
 	sigma=0.05,
-	d=5,
+	d=4,
 	num_cores=num_cores,
 	verbose=False)
 
