@@ -158,11 +158,11 @@ start_time = time.time()
 print('starting at:',start_time)
 X = parallel_evolve(
 	N_gen=250,
-	N_players=2,
-	matches_per_player=1,
+	N_players=32,
+	matches_per_player=5,
 	carry_forward=1,
 	sigma=0.05,
-	d=1,
+	d=2,
 	num_cores=num_cores,
 	verbose=False)
 
