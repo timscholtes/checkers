@@ -463,7 +463,6 @@ def play_game_from_state(game,state,nnets,verbose,d, **players):
         return [0,0]
 
 #################
-
 """
 player1=alphabeta_player
 player2=alphabeta_player

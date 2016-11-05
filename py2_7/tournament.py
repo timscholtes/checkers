@@ -76,6 +76,8 @@ def play_parallel_tourn(schedule,players,num_cores,d):
 	inputs = [(checkers,m,players,d) for m in schedule]
 	pool = mp.Pool(processes=num_cores)
 	scores = pool.map(setup_play_game,inputs)
+	pool.close()
+	pool.join()
 	rec_scores = reconcile_scores(schedule,scores,len(players))
 	return(rec_scores)
 
