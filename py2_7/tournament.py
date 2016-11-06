@@ -131,26 +131,29 @@ def parallel_evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,num
 		prev_gen = list(cull(scores,carry_forward))
 		if gen_counter % 10 == 0:
 			top_player = gen[list(cull(scores,1))[0]]
-			directory = 'data/gen'+str(gen_counter)+'/'
+			directory = 'data_'+str(d)+'/gen'+str(gen_counter)+'/'
 			if not os.path.exists(directory):
 				os.makedirs(directory)
-			np.save('data/gen'+str(gen_counter)+'/W1.npy',top_player['W1'])
-			np.save('data/gen'+str(gen_counter)+'/W2.npy',top_player['W2'])
-			np.save('data/gen'+str(gen_counter)+'/W3.npy',top_player['W3'])
-			np.save('data/gen'+str(gen_counter)+'/W4.npy',top_player['W4'])
+			np.save(directory+'W1.npy',top_player['W1'])
+			np.save(directory+'W2.npy',top_player['W2'])
+			np.save(directory+'W3.npy',top_player['W3'])
+			np.save(directory+'W4.npy',top_player['W4'])
 
 		gen_counter += 1
 
+	directory = 'data_'+str(d)+'/top_player/'
+	if not os.path.exists(directory):
+		os.makedirs(directory)
 
 	top_player = gen[list(cull(scores,1))[0]]
 
 	#with open('data/top_player.txt', 'w') as f:
 	#	json.dump(top_player,f)
 
-	np.save('data/top_player/W1.npy',top_player['W1'])
-	np.save('data/top_player/W2.npy',top_player['W2'])
-	np.save('data/top_player/W3.npy',top_player['W3'])
-	np.save('data/top_player/W4.npy',top_player['W4'])
+	np.save(directory+'W1.npy',top_player['W1'])
+	np.save(directory+'W2.npy',top_player['W2'])
+	np.save(directory+'W3.npy',top_player['W3'])
+	np.save(directory+'W4.npy',top_player['W4'])
 
 	return top_player
 
@@ -162,9 +165,9 @@ X = parallel_evolve(
 	N_gen=250,
 	N_players=32,
 	matches_per_player=5,
-	carry_forward=1,
+	carry_forward=8,
 	sigma=0.05,
-	d=2,
+	d=4,
 	num_cores=num_cores,
 	verbose=False)
 
