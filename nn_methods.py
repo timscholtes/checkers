@@ -61,7 +61,9 @@ def predict_nn(model, x,turn):
     return a3
 
 def predict_nn2(model, x,turn):
-    x = [turn*i for i in x]
+    if turn == -1:
+    	x = [turn*i for i in x]
+    	x = list(reversed(x))
     x = np.append(x,1)
     W1, W2, W3,W4 = model['W1'], model['W2'], model['W3'], model['W4']
     # Forward propagation

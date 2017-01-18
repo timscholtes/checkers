@@ -157,69 +157,21 @@ def parallel_evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,num
 
 	return top_player
 
-num_cores = mp.cpu_count()
+if __name__ == '__main__':
+	num_cores = mp.cpu_count()
 
-start_time = time.time()
-print('starting at:',start_time)
-X = parallel_evolve(
-	N_gen=250,
-	N_players=32,
-	matches_per_player=5,
-	carry_forward=8,
-	sigma=0.05,
-	d=4,
-	num_cores=num_cores,
-	verbose=False)
+	start_time = time.time()
+	print('starting at:',start_time)
+	X = parallel_evolve(
+		N_gen=250,
+		N_players=32,
+		matches_per_player=5,
+		carry_forward=8,
+		sigma=0.05,
+		d=4,
+		num_cores=num_cores,
+		verbose=False)
 
-end_time = time.time()
-print('ending at:',end_time)
-print(end_time-start_time)
-"""
-gen1 = regeneration(N_players=3)
-schedule1 = generate_schedule(3,1)"""
-"""tourn_start = time.time()
-A = play_tournament(schedule=schedule1,players=gen1,d=1,verbose=False)
-tourn_end = time.time()
-""""""
-tourn_start2 = time.time()
-B = play_parallel_tourn(schedule=schedule1,players=gen1,num_cores=4,d=1)
-tourn_end2 = time.time()
-
-print(tourn_end2-tourn_start2)
-print(B)
-"""
-"""
-result_list = []
-def log_result(result):
-    # This is called whenever foo_pool(i) returns a result.
-    # result_list is modified only by the main process, not the pool workers.
-    result_list.append(result)
-
-def apply_async_with_callback(schedule,players,num_cores,d):
-	score = generate_scoreboard(len(players))
-	checkers=checkers_class()
-	player1=alphabeta_player
-	player2=alphabeta_player
-	game_counter=0
-	total_games = len(schedule)
-	inputs = [(checkers,m,players,d) for m in schedule]
-	pool = mp.Pool(processes=num_cores)
-	#scores = pool.map(setup_play_game,inputs)
-
-	#pool = mp.Pool()
-	for i in inputs:
-		pool.apply_async(setup_play_game, args = (i, ), callback = log_result)
-	pool.close()
-	pool.join()
-	print(result_list)
-
-
-
-tourn_start2 = time.time()
-C = apply_async_with_callback(schedule=schedule1,players=gen1,num_cores=4,d=1)
-tourn_end2 = time.time()
-
-print(tourn_end2-tourn_start2)
-print(C)
-
-"""
+	end_time = time.time()
+	print('ending at:',end_time)
+	print(end_time-start_time)

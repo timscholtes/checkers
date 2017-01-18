@@ -147,7 +147,6 @@ class checkers_class(Game):
         return X
 
     def legal_moves(self,state):
-        opponent_temp = state.turn * -1
         primary_pos = [i for i in list(range(1,33)) if np.sign(state.board[i-1]) == np.sign(state.turn)]
         
         available = []
@@ -155,7 +154,6 @@ class checkers_class(Game):
             avail_jumps = []
             avail_simps = []
             # if any jumps are found for any positions, then it will not evaluate any possible simple moves.
-            jumpables = False
             for pos in primary_pos:
                 if state.board[pos-1] == self.K*state.turn:
                     X = self.both_move_dict[pos]
@@ -165,6 +163,7 @@ class checkers_class(Game):
                     X = self.back_move_dict[pos]
                 # for jump, there needs to be empty space to jump into AND an opposition piece in the same simp. space
                 pos_jumps = self.available_jumps(move_dict=X,state=state)
+                
                 
                 if len(pos_jumps)>0:
                     for i in pos_jumps:
