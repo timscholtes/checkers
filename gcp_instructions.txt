@@ -1,0 +1,11 @@
+gcloud compute instances create highcpu --machine-type n1-highcpu-16 --zone europe-west1-b
+gcloud compute --project "checkers-144720" ssh --zone "europe-west1-b" "highcpu"
+
+sudo apt-get update
+sudo apt-get -y -qq install git
+git --version
+git clone https://github.com/ts437/checkers.git
+sudo apt-get --yes install python-setuptools
+sudo easy_install pip
+sudo pip install numpy
+python tournament.py
