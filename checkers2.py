@@ -155,25 +155,27 @@ class checkers_class(Game):
             avail_simps = []
             # if any jumps are found for any positions, then it will not evaluate any possible simple moves.
             for pos in primary_pos:
-                if state.board[pos-1] == self.K*state.turn:
-                    X = self.both_move_dict[pos]
-                elif state.turn == 1:
+                # determine which move dictionary we're going to use. Fast lookup.
+                piece = state.board[pos-1]
+                if piece == 1:
                     X = self.forward_move_dict[pos]
-                else:
+                elif piece == -1:
                     X = self.back_move_dict[pos]
+                else:
+                    X = self.both_move_dict[pos]
+
                 # for jump, there needs to be empty space to jump into AND an opposition piece in the same simp. space
                 pos_jumps = self.available_jumps(move_dict=X,state=state)
-                
-                
                 if len(pos_jumps)>0:
                     for i in pos_jumps:
                         avail_jumps.append([pos,i])
                 else:
                     # evaluate the simple moves (requiring forward empty space)
-                    pos_simps = [i for i in X['simp'] if state.board[i-1] ==0]
-                    if len(pos_simps)>0:
-                        for i in pos_simps:
+                    for i in X['simp']:
+                        if state.board[i-1] == 0:
                             avail_simps.append([pos,i])
+
+            # can only evaluate this having explored all positions
             if len(avail_jumps)==0:
                 available = avail_simps
             else:
@@ -192,8 +194,6 @@ class checkers_class(Game):
                     available.append([state.jump_loc,i])
         return available
 
-    def movables(self,moves):
-        [i[0] for i in moves]
 
     def make_jump(self,board,turn,move):
         # get the pairs of mids and jumps

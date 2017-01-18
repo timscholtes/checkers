@@ -163,7 +163,7 @@ if __name__ == '__main__':
 	start_time = time.time()
 	print('starting at:',start_time)
 	X = parallel_evolve(
-		N_gen=250,
+		N_gen=150,
 		N_players=32,
 		matches_per_player=5,
 		carry_forward=8,
