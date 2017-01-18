@@ -5,6 +5,7 @@ from games import *
 import numpy as np
 import time
 from nn_methods import *
+import copy
 
 ######
 def rank(s):
@@ -221,7 +222,7 @@ class checkers_class(Game):
         #classify move type
         move_type = 'jump' if abs(move[0]-move[1])>5 else 'simp'
 
-        board = state.board.copy()
+        board = copy.deepcopy(state.board)
 
         if move_type == 'simp':
             board[move[1]-1] = board[move[0]-1]
@@ -382,7 +383,7 @@ def query_player(game, state,*extra):
     a = [int(x) for x in input('Your move? ').split()]
     return(a)
 
-def play_game(game,nnets, *players,verbose=False,d=3):
+def play_game(game,nnets,verbose,d, *players):
     "Play an n-person, move-alternating game."
     state = game.initial
     counter = 0
@@ -425,7 +426,7 @@ def play_game(game,nnets, *players,verbose=False,d=3):
         return [0,0]
 
 
-def play_game_from_state(game,state,nnets, *players,verbose=False,d=3):
+def play_game_from_state(game,state,nnets,verbose,d, **players):
     "Play an n-person, move-alternating game."
     counter = 0
     move_store = []
@@ -462,7 +463,6 @@ def play_game_from_state(game,state,nnets, *players,verbose=False,d=3):
         return [0,0]
 
 #################
-
 """
 player1=alphabeta_player
 player2=alphabeta_player

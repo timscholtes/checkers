@@ -4,6 +4,7 @@ import random
 from checkers2 import *
 import json
 import multiprocessing as mp
+import os
 def generate_schedule(N_players,N_opponents):
 	X = {i: random.sample([x for x in range(N_players) if x!=i],N_opponents) for i in range(N_players)}
 	games_list = []
@@ -38,7 +39,7 @@ def play_tournament(schedule,players,d,verbose):
 		if verbose:
 			print('Game: ',game_counter,' out of ',total_games,': ',p1,' vs ',p2)
 		nnets = {1: players[p1],-1: players[p2]}
-		scores.append(play_game(checkers,nnets,player1,player2,d=d,verbose=verbose))
+		scores.append(play_game(checkers,nnets,verbose,d,player1,player2))
 		#score[p1] += outcome[0]
 		#score[p2] += outcome[1]
 		if verbose:
@@ -55,7 +56,7 @@ def setup_play_game(input_list):
 	player1=alphabeta_player
 	player2=alphabeta_player
 	nnets = {1: players[p1],-1: players[p2]}
-	outcome = play_game(game,nnets,player1,player2,d=d,verbose=False)
+	outcome = play_game(game,nnets,False,d,player1,player2)
 	return outcome
 
 def reconcile_scores(schedule,scores,N_players):
@@ -75,6 +76,8 @@ def play_parallel_tourn(schedule,players,num_cores,d):
 	inputs = [(checkers,m,players,d) for m in schedule]
 	pool = mp.Pool(processes=num_cores)
 	scores = pool.map(setup_play_game,inputs)
+	pool.close()
+	pool.join()
 	rec_scores = reconcile_scores(schedule,scores,len(players))
 	return(rec_scores)
 
@@ -112,7 +115,7 @@ def evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,verbose=Fals
 
 	return top_player
 
-def parallel_evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,num_cores,verbose=False):
+def parallel_evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,num_cores,verbose):
 	gen_counter = 1
 	spawn_ratio = int(N_players / carry_forward)
 	while gen_counter <= N_gen:
@@ -126,25 +129,47 @@ def parallel_evolve(N_gen,N_players,matches_per_player,carry_forward,sigma,d,num
 		schedule = generate_schedule(N_players,matches_per_player)
 		scores = play_parallel_tourn(schedule=schedule,players=gen,num_cores=num_cores,d=d)
 		prev_gen = list(cull(scores,carry_forward))
+		if gen_counter % 10 == 0:
+			top_player = gen[list(cull(scores,1))[0]]
+			directory = 'data_'+str(d)+'/gen'+str(gen_counter)+'/'
+			if not os.path.exists(directory):
+				os.makedirs(directory)
+			np.save(directory+'W1.npy',top_player['W1'])
+			np.save(directory+'W2.npy',top_player['W2'])
+			np.save(directory+'W3.npy',top_player['W3'])
+			np.save(directory+'W4.npy',top_player['W4'])
+
 		gen_counter += 1
+
+	directory = 'data_'+str(d)+'/top_player/'
+	if not os.path.exists(directory):
+		os.makedirs(directory)
 
 	top_player = gen[list(cull(scores,1))[0]]
 
 	#with open('data/top_player.txt', 'w') as f:
 	#	json.dump(top_player,f)
 
-	np.save('data/top_player/W1.npy',top_player['W1'])
-	np.save('data/top_player/W2.npy',top_player['W2'])
-	np.save('data/top_player/W3.npy',top_player['W3'])
-	np.save('data/top_player/W4.npy',top_player['W4'])
+	np.save(directory+'W1.npy',top_player['W1'])
+	np.save(directory+'W2.npy',top_player['W2'])
+	np.save(directory+'W3.npy',top_player['W3'])
+	np.save(directory+'W4.npy',top_player['W4'])
 
 	return top_player
 
-
+num_cores = mp.cpu_count()
 
 start_time = time.time()
 print('starting at:',start_time)
-X = parallel_evolve(3,6,2,3,0.05,1,4)
+X = parallel_evolve(
+	N_gen=250,
+	N_players=32,
+	matches_per_player=5,
+	carry_forward=8,
+	sigma=0.05,
+	d=4,
+	num_cores=num_cores,
+	verbose=False)
 
 end_time = time.time()
 print('ending at:',end_time)
